@@ -148,33 +148,101 @@ def analyze_file(file_path, token):
         print(f"Error during analysis: {e}")
         raise
 
-    # Generate narrative analysis using GPT
     
-    try:
-        narrative_prompt = f"""
-You are a data analyst tasked with creating a comprehensive narrative for the dataset `{os.path.basename(file_path)}`. Summarize the insights, describe the data cleaning process, and highlight key patterns. Include findings from the visualizations generated.
-"""
+     # prompt to execute by the gpt-4o-mini 
+    narrative_prompt = f"""
+You are a data analyst tasked with creating a comprehensive, human-readable analysis story for a dataset loaded from the file `{os.path.basename(file_path)}`. This dataset contains a mix of numerical and categorical features. Your objective is to provide a compelling narrative that includes detailed analysis and a visually appealing README file with the following sections:
 
+---
+
+## **1. Project Overview**
+- **Dataset Name**: `{os.path.basename(file_path)}`
+- **Dataset Description**: Briefly describe the purpose or origin of the dataset (e.g., "This dataset provides information about XYZ.").
+- **Summary Statistics**: Provide an overview of key metrics like:
+  - Total Features: {len(data.columns)}
+  - Total Records: {len(data)}
+  - Data Types: Numerical ({len(data.select_dtypes(include='number').columns)}), Categorical ({len(data.select_dtypes(include='object').columns)})
+
+---
+
+## **2. Data Cleaning Process**
+- **Missing Data**: Describe how missing values were handled (e.g., dropped, imputed) for columns where missing values exceeded 10% ({', '.join(missing_report[missing_report > 10].index.tolist())}).
+- **Outliers**: Highlight the columns with detected outliers ({', '.join(outliers[outliers > 0].index.tolist())}) and explain their potential causes and impact.
+- **Formatting Changes**: Mention any transformations applied (e.g., date formatting, standardizing units).
+
+---
+
+## **3. Exploratory Data Analysis (EDA)**
+
+- **Visual Summary**: Below are the key visualizations generated for the dataset:
+  
+1.- [Correlation Heatmap](./correlation_matrix.png)
+ ***Correlation Heatmap***: What are the significant correlations in the dataset (above 0.7 or below -0.7)?
+  - [Box Plot for Outliers](./outlier_boxplot.png)
+2. **Box Plot for Outliers**: Are there any columns with outliers? How might they affect data analysis or modeling?
+  - [Missing Values Heatmap](./missing_values_heatmap.png)
+3. **Missing Values Heatmap**: Which columns have missing values, and what percentage of data is missing?
+  - [Histograms of Numerical Features](./numerical_histograms.png)
+4. **Histograms of Numerical Features**: Which features are skewed or have unusual distributions?
+
+
+## **4. Key Insights**
+- **Feature Importance**: Highlight standout features with potential predictive power.
+- **Data Quality**: Summarize issues such as missing data or inconsistent entries.
+- **Patterns & Trends**: Provide actionable insights (e.g., "Feature X is a strong predictor of Y.").
+
+---
+
+## **5. Recommendations**
+- **Data Preparation**: Suggest further steps for improving data quality (e.g., advanced imputation methods, removing anomalies).
+- **Modeling Tips**:
+  - Address multicollinearity in highly correlated features.
+  - Recommend feature scaling or normalization techniques.
+- **Feature Engineering**: Propose creating new features (e.g., ratios, log transformations) to improve predictive power.
+
+---
+
+## **6. Appendix**
+- **File Details**:
+  - Dataset Path: `{file_path}`
+- **Additional Visualizations**: Attach links to saved plots and images.
+- **Images Analysis**: Summarize key insights from accompanying images if any.
+
+---
+
+## **7. References**
+Provide links to:
+- Documentation
+- Related articles or papers about the dataset's domain.
+- External sources of analysis inspiration.
+
+"""
+    
+    # generating Response from LLM model
+    try:
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a data analyst."},
+                {"role": "system", "content": "You are a data analyst."}, 
                 {"role": "user", "content": narrative_prompt}
             ],
-            max_tokens=1000
+            max_tokens=2048,
+            temperature=0.3,
+            
         )
-
         narrative = response['choices'][0]['message']['content']
-
-        # Save the narrative as a README file
         readme_path = os.path.join(output_dir, "README.md")
+        
         with open(readme_path, "w") as f:
             f.write(narrative)
-        print(f"Analysis report saved as {readme_path}")
-
+            print(f"Narrative report saved as '{readme_path}'.")
+    #handling mutliple exceptions
+    except openai.error.AuthenticationError as e:
+        print(f"Authentication Error: {e}. Please check your API token.")
+    except openai.error.OpenAIError as e:
+        print(f"OpenAI API Error: {e}. Path: {openai.api_base}/chat/completions")
     except Exception as e:
-        print(f"Error generating narrative: {e}")
-        raise
+        print(f"Unexpected error occurred while generating narrative: {e}")
 
 # Main execution logic
 if __name__ == "__main__":
