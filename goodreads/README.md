@@ -76,7 +76,7 @@
 ## **6. Appendix**
 
 - **File Details**:
-  - Dataset Path: `.\reso\goodreads.csv`
+  - Dataset Path: `datasets\goodreads.csv`
 
 - **Additional Visualizations**: 
   - All visualizations referenced above are saved in the project directory.

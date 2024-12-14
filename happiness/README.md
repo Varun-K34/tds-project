@@ -72,7 +72,7 @@
 
 ## **6. Appendix**
 - **File Details**:
-  - Dataset Path: `.\reso\happiness.csv`
+  - Dataset Path: `datasets\happiness.csv`
   
 - **Additional Visualizations**: Access and review additional plots and analyses through the links provided above.
 
